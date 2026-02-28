@@ -3,7 +3,7 @@
 # Wrapper script for recording study/work sessions with optimized settings
 # - 720p resolution
 # - 30-second intervals
-# - No timestamp overlay
+# - Timestamp overlay (HH:MM)
 # - Uses virtual webcam at /dev/video20 (IP Webcam)
 
 set -e
@@ -16,6 +16,8 @@ INTERVAL=30
 WIDTH=1280
 HEIGHT=720
 OUTPUT_DIR="$PROJECT_DIR/timelapse_imgs"
+PHONE_IP=""
+PHONE_PORT=8080
 
 # Parse optional arguments
 while [[ $# -gt 0 ]]; do
@@ -32,6 +34,14 @@ while [[ $# -gt 0 ]]; do
       OUTPUT_DIR="$2"
       shift 2
       ;;
+    --phone-ip|-p)
+      PHONE_IP="$2"
+      shift 2
+      ;;
+    --phone-port)
+      PHONE_PORT="$2"
+      shift 2
+      ;;
     --help|-h)
       echo "Usage: $0 [OPTIONS]"
       echo ""
@@ -39,14 +49,18 @@ while [[ $# -gt 0 ]]; do
       echo "  --hours, -H <hours>        Duration in hours (default: 8)"
       echo "  --interval, -i <seconds>   Interval between frames (default: 30)"
       echo "  --output-dir, -o <dir>     Output directory (default: timelapse_imgs)"
+      echo "  --phone-ip, -p <ip>        IP address of phone running IP Webcam app"
+      echo "                             (efficient snapshot mode - saves battery/network)"
+      echo "  --phone-port <port>        IP Webcam port (default: 8080)"
       echo "  --help, -h                 Show this help message"
       echo ""
       echo "Optimized settings for study/work timelapses:"
       echo "  - Resolution: 1280x720 (720p)"
-      echo "  - No timestamp overlay"
+      echo "  - Timestamp overlay: HH:MM (military time, top-left)"
       echo "  - Uses virtual webcam at /dev/video20 (IP Webcam)"
       echo ""
       echo "Example: $0 --hours 6 --interval 45"
+      echo "Example: $0 --phone-ip 192.168.1.100 --hours 4  (uses efficient snapshot mode)"
       exit 0
       ;;
     *)
@@ -74,15 +88,22 @@ echo ""
 echo "Expected: ~$NUM_FRAMES frames → ~${VIDEO_DURATION_24FPS}s video at 24fps"
 echo ""
 
-# Check if virtual webcam exists
-if [ ! -e /dev/video20 ]; then
+# Check if virtual webcam exists (only if not using phone snapshot mode)
+if [ -z "$PHONE_IP" ] && [ ! -e /dev/video20 ]; then
   echo "WARNING: Virtual webcam /dev/video20 not found!"
   echo "Make sure to run './start_phone_stream.sh' first to set up IP Webcam"
+  echo "OR use --phone-ip to capture directly from the phone (more efficient)"
   echo ""
   read -p "Do you want to continue anyway? (y/n): " CONTINUE
   if [[ ! $CONTINUE =~ ^[Yy] ]]; then
     exit 1
   fi
+fi
+
+if [ -n "$PHONE_IP" ]; then
+  echo "Using efficient snapshot mode: http://$PHONE_IP:$PHONE_PORT/shot.jpg"
+  echo "(No continuous streaming - saves battery and network bandwidth)"
+  echo ""
 fi
 
 # Check for existing images
@@ -115,10 +136,12 @@ if [ -n "$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f 2>/dev/null)" ];
 fi
 
 # Build command
-CMD="uv run capture_timelapse.py --hours $HOURS --interval $INTERVAL --output-dir \"$OUTPUT_DIR\" --width $WIDTH --height $HEIGHT"
+CMD="uv run capture_timelapse.py --hours $HOURS --interval $INTERVAL --output-dir \"$OUTPUT_DIR\" --width $WIDTH --height $HEIGHT --add-timestamp"
 
-# Note: We explicitly DON'T add --add-timestamp flag because we want no timestamp
-# The default behavior when the flag is omitted should be handled
+# Add phone IP if specified (efficient snapshot mode)
+if [ -n "$PHONE_IP" ]; then
+  CMD="$CMD --phone-ip $PHONE_IP --phone-port $PHONE_PORT"
+fi
 
 # Add resume flag if needed
 if [ "$RESUME" = true ]; then
