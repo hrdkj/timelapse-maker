@@ -78,9 +78,41 @@ mkdir -p "$VIDEO_DIR"
 
 # Generate output filename if not specified
 if [ -z "$OUTPUT_VIDEO" ]; then
-  # Format: YYYY_monDD_HHhMM.mp4 (e.g., 2024_feb21_14h30.mp4)
-  TIMESTAMP=$(date +%Y_%b%d_%Hh%M | tr '[:upper:]' '[:lower:]')
-  OUTPUT_VIDEO="$VIDEO_DIR/session_${TIMESTAMP}.mp4"
+  # Calculate recording duration from first/last image timestamps
+  FIRST_IMG=$(find "$IMAGE_FOLDER" -name "*.jpg" | sort -V | head -1)
+  LAST_IMG=$(find "$IMAGE_FOLDER" -name "*.jpg" | sort -V | tail -1)
+
+  if [ -n "$FIRST_IMG" ] && [ -n "$LAST_IMG" ]; then
+    FIRST_TS=$(stat -c %Y "$FIRST_IMG")
+    LAST_TS=$(stat -c %Y "$LAST_IMG")
+    DURATION_S=$((LAST_TS - FIRST_TS))
+    DURATION_H=$((DURATION_S / 3600))
+    REMAINDER_S=$((DURATION_S % 3600))
+    DURATION_M=$((REMAINDER_S / 60))
+
+    if [ "$DURATION_H" -gt 0 ]; then
+      RECORDING_DURATION="${DURATION_H}h${DURATION_M}m"
+    else
+      RECORDING_DURATION="${DURATION_M}m"
+    fi
+
+    FIRST_DATE=$(date -d "@$FIRST_TS" +%Y_%b%d | tr '[:upper:]' '[:lower:]')
+    LAST_DATE=$(date -d "@$LAST_TS" +%Y_%b%d | tr '[:upper:]' '[:lower:]')
+
+    if [ "$FIRST_DATE" = "$LAST_DATE" ]; then
+      DATE_PART="$FIRST_DATE"
+    else
+      # Multi-day: session_2024_feb21-22_29h0m.mp4
+      LAST_DAY=$(date -d "@$LAST_TS" +%d | tr '[:upper:]' '[:lower:]')
+      DATE_PART="$(date -d "@$FIRST_TS" +%Y_%b%d | tr '[:upper:]' '[:lower:]')-${LAST_DAY}"
+    fi
+  else
+    RECORDING_DURATION="unknown"
+    DATE_PART=$(date +%Y_%b%d | tr '[:upper:]' '[:lower:]')
+  fi
+
+  # Format: session_YYYY_monDD_XhYm.mp4 or session_YYYY_monDD-DD_monDD_XhYm.mp4
+  OUTPUT_VIDEO="$VIDEO_DIR/session_${DATE_PART}_${RECORDING_DURATION}.mp4"
 fi
 
 # Ensure output has .mp4 extension
@@ -128,7 +160,8 @@ FILE_SIZE=$(du -h "$OUTPUT_VIDEO" | cut -f1)
 echo ""
 echo "=== Video Created Successfully ==="
 echo "Output: $OUTPUT_VIDEO"
-echo "Duration: ${VIDEO_DURATION}s"
+echo "Recording duration: ${RECORDING_DURATION}"
+echo "Video duration: ${VIDEO_DURATION}s"
 echo "File size: $FILE_SIZE"
 echo ""
 

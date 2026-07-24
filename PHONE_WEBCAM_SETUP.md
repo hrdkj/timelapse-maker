@@ -19,8 +19,7 @@ This guide shows you how to set up your Android phone as a webcam over WiFi usin
 Install the required kernel module for creating virtual webcam devices:
 
 ```bash
-sudo apt update
-sudo apt install -y v4l2loopback-dkms v4l2loopback-utils
+sudo pacman -S v4l2loopback-dkms
 ```
 
 Verify installation:
@@ -203,7 +202,7 @@ Create a config file to auto-load on boot:
 
 ```bash
 echo "v4l2loopback" | sudo tee /etc/modules-load.d/v4l2loopback.conf
-echo "options v4l2loopback devices=1 video_nr=20 card_label=\"IPWebcam\" exclusive_caps=1" | sudo tee /etc/modprobe.d/v4l2loopback.conf
+echo 'options v4l2loopback devices=1 video_nr=20 card_label="IPWebcam"' | sudo tee /etc/modprobe.d/v4l2loopback.conf
 ```
 
 Reboot and the module will load automatically.

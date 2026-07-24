@@ -3,6 +3,8 @@ timelapse_images/*
 videos/*
 .DS_Store
 .env/
+preview_capture/*
+test_capture/*
 
 .roo
 .ruru

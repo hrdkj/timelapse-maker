@@ -17,7 +17,7 @@ INTERVAL=15
 OUTPUT_DIR="$IMG_DIR"
 WIDTH=""
 HEIGHT=""
-ADD_TIMESTAMP=true  # Default to adding timestamp
+ADD_TIMESTAMP=false
 
 # Parse optional arguments
 while [[ $# -gt 0 ]]; do

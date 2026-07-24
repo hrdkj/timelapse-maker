@@ -16,7 +16,7 @@ INTERVAL=30
 WIDTH=1280
 HEIGHT=720
 OUTPUT_DIR="$PROJECT_DIR/timelapse_imgs"
-PHONE_IP=""
+PHONE_IP="192.168.31.154"
 PHONE_PORT=8080
 
 # Parse optional arguments
@@ -60,7 +60,7 @@ while [[ $# -gt 0 ]]; do
       echo "  - Uses virtual webcam at /dev/video20 (IP Webcam)"
       echo ""
       echo "Example: $0 --hours 6 --interval 45"
-      echo "Example: $0 --phone-ip 192.168.1.100 --hours 4  (uses efficient snapshot mode)"
+      echo "Example: $0 --phone-ip 192.168.31.154 --hours 4  (uses efficient snapshot mode)"
       exit 0
       ;;
     *)

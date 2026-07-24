@@ -7,6 +7,7 @@ from datetime import datetime
 import re
 import urllib.request
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 
 @dataclass
@@ -15,30 +16,57 @@ class Resolution:
     height: int
 
 
+FONT_PATHS = [
+    "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    "/usr/share/fonts/liberation/LiberationMono-Regular.ttf",
+    "/usr/share/fonts/noto/NotoSansMono-Regular.ttf",
+]
+
+_font = None
+
+
+def _load_font(size: int = 24) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    global _font
+    if _font is not None:
+        return _font
+    for path in FONT_PATHS:
+        if Path(path).exists():
+            _font = ImageFont.truetype(path, size)
+            return _font
+    _font = ImageFont.load_default(size)
+    return _font
+
+
 def add_timestamp(frame):
-    # Get current local time in military format (HH:MM)
     now = datetime.now()
     time_str = now.strftime("%H:%M")
 
-    # Set font properties (medium-small, white)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 2.0
-    font_thickness = 2
-    color = (255, 255, 255)  # White
+    pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(pil_image, "RGBA")
+    font = _load_font(24)
 
-    # Get text size
-    text_size = cv2.getTextSize(time_str, font, font_scale, font_thickness)[0]
+    text_length = font.getlength(time_str)
+    ascent, descent = font.getmetrics()
+    text_h = ascent + descent
 
-    # Position: top-left with padding
-    text_x = 20
-    text_y = text_size[1] + 20
+    padding = 8
+    box_x = 16
+    box_y = 12
 
-    # Put text on frame
-    cv2.putText(
-        frame, time_str, (text_x, text_y), font, font_scale, color, font_thickness
+    draw.rounded_rectangle(
+        [box_x, box_y, box_x + text_length + padding * 2, box_y + text_h + padding * 2],
+        radius=6,
+        fill=(0, 0, 0, 160),
+    )
+    draw.text(
+        (box_x + padding, box_y + padding),
+        time_str,
+        font=font,
+        fill=(255, 255, 255),
     )
 
-    return frame
+    return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
 
 def fetch_snapshot_from_phone(
