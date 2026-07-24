@@ -10,6 +10,17 @@ set -e
 
 PROJECT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
+format_elapsed_time() {
+  local total_seconds=$1
+  local hours=$((total_seconds / 3600))
+  local minutes=$(((total_seconds % 3600) / 60))
+  local seconds=$((total_seconds % 60))
+  local decimal_hours
+
+  decimal_hours=$(awk "BEGIN { printf \"%.2f\", $total_seconds / 3600 }")
+  printf '%s hours (%dh %dm %ds)' "$decimal_hours" "$hours" "$minutes" "$seconds"
+}
+
 # Default values optimized for study/work sessions
 HOURS=8
 INTERVAL=30
@@ -155,9 +166,13 @@ echo ""
 
 # Run the capture
 cd "$PROJECT_DIR" && eval $CMD
+CAPTURED_FRAMES=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f | wc -l)
+RECORDING_ELAPSED_SECONDS=$((CAPTURED_FRAMES * INTERVAL))
 
 echo ""
 echo "Recording completed!"
+echo "Frames captured: $CAPTURED_FRAMES"
+echo "Total recording time: $(format_elapsed_time "$RECORDING_ELAPSED_SECONDS")"
 echo "Frames saved to: $OUTPUT_DIR"
 echo ""
 echo "To create a video, run:"
