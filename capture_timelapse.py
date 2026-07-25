@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 import argparse
+import sys
+import threading
 import time
 import cv2
 from datetime import datetime
@@ -14,6 +16,62 @@ from PIL import Image, ImageDraw, ImageFont
 class Resolution:
     width: int
     height: int
+
+
+class PauseController:
+    """Let an interactive capture pause without losing its progress."""
+
+    def __init__(self):
+        self._condition = threading.Condition()
+        self._paused = False
+
+    def start(self) -> None:
+        """Start listening for terminal commands when stdin is interactive."""
+        if not sys.stdin.isatty():
+            return
+
+        print("Controls: type p then Enter to pause; type r then Enter to resume.")
+        threading.Thread(target=self._listen, daemon=True).start()
+
+    def _listen(self) -> None:
+        for command in sys.stdin:
+            command = command.strip().lower()
+            if command == "p":
+                self.pause()
+            elif command == "r":
+                self.resume()
+            elif command:
+                print("Unknown control. Type p then Enter to pause, or r then Enter to resume.")
+
+    def pause(self) -> None:
+        with self._condition:
+            if self._paused:
+                print("Capture is already paused.")
+                return
+            self._paused = True
+            self._condition.notify_all()
+        print("Capture paused. No frames will be saved until you type r then Enter.")
+
+    def resume(self) -> None:
+        with self._condition:
+            if not self._paused:
+                print("Capture is already running.")
+                return
+            self._paused = False
+            self._condition.notify_all()
+        print("Capture resumed.")
+
+    def wait_for_active_time(self, seconds: float) -> None:
+        """Wait for recording time, excluding any time spent paused."""
+        remaining = seconds
+        while remaining > 0:
+            with self._condition:
+                while self._paused:
+                    self._condition.wait()
+
+                started_at = time.monotonic()
+                self._condition.wait(timeout=remaining)
+                remaining -= time.monotonic() - started_at
 
 
 FONT_PATHS = [
@@ -220,6 +278,8 @@ def capture_timelapse(
 
     consecutive_failures = 0
     max_consecutive_failures = 5
+    pause_controller = PauseController()
+    pause_controller.start()
 
     try:
         for i in range(start_frame, start_frame + num_frames):
@@ -263,7 +323,7 @@ def capture_timelapse(
             )
 
             if i < start_frame + num_frames - 1:
-                time.sleep(interval)
+                pause_controller.wait_for_active_time(interval)
 
     except KeyboardInterrupt:
         print("\nCapture interrupted by user")

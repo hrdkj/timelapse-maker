@@ -115,6 +115,7 @@ uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs
 - **Built-in timestamps**: Add military time (HH:MM) to each frame
 - **Custom resolution**: Set specific width and height for capture
 - **Flexible intervals**: Configure time between captures (seconds)
+- **Pause and resume controls**: While `record_session.sh` is recording, type `p` then Enter to pause and `r` then Enter to resume. Paused time does not reduce the requested recording duration.
 - **Resume capability**: Continue capturing from the last frame if interrupted
 - **Organized output**: Automatic directory structure for images and videos
 - **Error handling**: Graceful handling of camera issues and interruptions
@@ -122,4 +123,3 @@ uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs
 ## License
 
 MIT
-

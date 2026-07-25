@@ -63,6 +63,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --phone-ip, -p <ip>        IP address of phone running IP Webcam app"
       echo "                             (efficient snapshot mode - saves battery/network)"
       echo "  --phone-port <port>        IP Webcam port (default: 8080)"
+      echo "  During recording: type p + Enter to pause; r + Enter to resume"
       echo "  --help, -h                 Show this help message"
       echo ""
       echo "Optimized settings for study/work timelapses:"
@@ -162,6 +163,7 @@ fi
 echo ""
 echo "Starting recording..."
 echo "Press Ctrl+C to stop early"
+echo "Type p then Enter to pause; type r then Enter to resume"
 echo ""
 
 # Run the capture

@@ -10,3 +10,8 @@ test_capture/*
 .ruru
 scripts
 .roomodes
+
+__pycache__/
+*.pyc
+.ruff_cache/
+.venv/

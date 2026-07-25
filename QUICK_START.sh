@@ -42,6 +42,10 @@ COMMON RECORDING SCENARIOS:
 ./record_session.sh --hours 0.083
 → 10 frames, <1s video @ 24fps
 
+PAUSE / RESUME:
+While recording, type p then Enter to pause, and r then Enter to resume.
+Paused time does not count toward the session duration.
+
 
 TRADITIONAL CAMERA SETUP:
 --------------------------
