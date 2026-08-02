@@ -169,6 +169,34 @@ Terminal 2:
     [Post to Twitter!]
 
 ════════════════════════════════════════════════════════════════
+TRADITIONAL CAMERA SETUP (no phone)
+════════════════════════════════════════════════════════════════
+
+Using a built-in webcam or USB camera instead of your phone:
+
+    # 12-hour timelapse, 15s intervals
+    ./run_timelapse.sh --hours 12 --interval 15
+
+    # With custom resolution
+    ./run_timelapse.sh --hours 8 --interval 10 --width 1920 --height 1080
+
+    # Timestamp overlay
+    ./run_timelapse.sh --hours 8 --interval 30 --add-timestamp
+
+VIDEO CREATION OPTIONS:
+  Default (auto-named, 24fps, Twitter-optimized):
+    ./create_twitter_video.sh
+
+  Custom name:
+    ./create_twitter_video.sh --output my_grind_session.mp4
+
+  Different framerate:
+    ./create_twitter_video.sh --framerate 30
+
+  From a specific folder:
+    ./create_twitter_video.sh --input custom_imgs/ --output custom.mp4
+
+════════════════════════════════════════════════════════════════
 TIPS FOR GREAT TIMELAPSES
 ════════════════════════════════════════════════════════════════
 

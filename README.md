@@ -8,7 +8,7 @@ You can now use your Android phone as a webcam over WiFi! Perfect for recording 
 
 **Quick start:**
 1. See [PHONE_WEBCAM_SETUP.md](PHONE_WEBCAM_SETUP.md) for detailed setup
-2. Run `./QUICK_START.sh` for quick reference commands
+2. Run `./USAGE_GUIDE.sh` for a step-by-step walkthrough
 
 **Optimized for Twitter timelapses:**
 - 720p resolution
@@ -98,13 +98,13 @@ uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs
 
 #### Create Video
 ```bash
-uv run create_timelapse.py <image_folder> <output_video.mp4>
+./create_twitter_video.sh --input <image_folder> --output <output_video.mp4>
 ```
 
 Example:
 ```bash
 uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs --add-timestamp
-uv run create_timelapse.py timelapse_imgs videos/my_timelapse.mp4
+./create_twitter_video.sh --input timelapse_imgs --output videos/my_timelapse.mp4
 
 # Resume from last frame if capture was interrupted
 uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs --resume

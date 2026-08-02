@@ -145,11 +145,10 @@ echo "Output: $OUTPUT_VIDEO"
 echo ""
 echo "Creating video with optimized settings for Twitter..."
 
-# Use create_timelapse.py but with modified settings for 24fps
-cd "$PROJECT_DIR"
-
 # Create frames list
 FRAMES_LIST="$PROJECT_DIR/frames_twitter.txt"
+: > "$FRAMES_LIST"
+trap 'rm -f "$FRAMES_LIST"' EXIT
 find "$IMAGE_FOLDER" -name "*.jpg" | sort -V | while read img; do
   echo "file '$img'" >> "$FRAMES_LIST"
 done
@@ -166,9 +165,6 @@ ffmpeg -y \
   -crf 23 \
   -movflags +faststart \
   "$OUTPUT_VIDEO"
-
-# Clean up
-rm -f "$FRAMES_LIST"
 
 # Get file size
 FILE_SIZE=$(du -h "$OUTPUT_VIDEO" | cut -f1)

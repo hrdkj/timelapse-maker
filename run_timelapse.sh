@@ -80,8 +80,8 @@ if [ -n "$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f 2>/dev/null)" ];
 fi
 
 # Check if Python scripts exist
-if [ ! -f "$PROJECT_DIR/capture_timelapse.py" ] || [ ! -f "$PROJECT_DIR/create_timelapse.py" ]; then
-  echo "Error: Required Python scripts not found in $PROJECT_DIR."
+if [ ! -f "$PROJECT_DIR/capture_timelapse.py" ] || [ ! -f "$PROJECT_DIR/create_twitter_video.sh" ]; then
+  echo "Error: Required scripts not found in $PROJECT_DIR."
   exit 1
 fi
 
@@ -91,16 +91,16 @@ RESUME_FLAG=""
 if [ "$RESUME" = true ]; then
   RESUME_FLAG="--resume"
 fi
-if [ "$ADD_TIMESTAMP" = true ]; then
-  cd "$PROJECT_DIR" && uv run capture_timelapse.py --hours "$HOURS" --interval "$INTERVAL" --output-dir "$OUTPUT_DIR" --add-timestamp ${WIDTH:+--width "$WIDTH"} ${HEIGHT:+--height "$HEIGHT"} $RESUME_FLAG
-else
-  cd "$PROJECT_DIR" && uv run capture_timelapse.py --hours "$HOURS" --interval "$INTERVAL" --output-dir "$OUTPUT_DIR" ${WIDTH:+--width "$WIDTH"} ${HEIGHT:+--height "$HEIGHT"} $RESUME_FLAG
+TIMESTAMP_FLAG=""
+if [ "$ADD_TIMESTAMP" = false ]; then
+  TIMESTAMP_FLAG="--no-timestamp"
 fi
+cd "$PROJECT_DIR" && uv run capture_timelapse.py --hours "$HOURS" --interval "$INTERVAL" --output-dir "$OUTPUT_DIR" ${WIDTH:+--width "$WIDTH"} ${HEIGHT:+--height "$HEIGHT"} $TIMESTAMP_FLAG $RESUME_FLAG
 echo "Timelapse capture finished."
 
 # After capture is complete, create the video.
 echo "Creating timelapse video: $VIDEO_PATH"
-cd "$PROJECT_DIR" && uv run create_timelapse.py "$OUTPUT_DIR" "$VIDEO_PATH"
+./create_twitter_video.sh --input "$OUTPUT_DIR" --output "$VIDEO_PATH" --interval "$INTERVAL"
 
 echo "Timelapse process completed successfully. Video saved to $VIDEO_PATH"
 

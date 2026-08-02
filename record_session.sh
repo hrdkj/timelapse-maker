@@ -148,16 +148,16 @@ if [ -n "$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f 2>/dev/null)" ];
 fi
 
 # Build command
-CMD="uv run capture_timelapse.py --hours $HOURS --interval $INTERVAL --output-dir \"$OUTPUT_DIR\" --width $WIDTH --height $HEIGHT --add-timestamp"
+CMD=(uv run capture_timelapse.py --hours "$HOURS" --interval "$INTERVAL" --output-dir "$OUTPUT_DIR" --width "$WIDTH" --height "$HEIGHT" --add-timestamp)
 
 # Add phone IP if specified (efficient snapshot mode)
 if [ -n "$PHONE_IP" ]; then
-  CMD="$CMD --phone-ip $PHONE_IP --phone-port $PHONE_PORT"
+  CMD+=(--phone-ip "$PHONE_IP" --phone-port "$PHONE_PORT")
 fi
 
 # Add resume flag if needed
 if [ "$RESUME" = true ]; then
-  CMD="$CMD --resume"
+  CMD+=(--resume)
 fi
 
 echo ""
@@ -167,7 +167,7 @@ echo "Type p then Enter to pause; type r then Enter to resume"
 echo ""
 
 # Run the capture
-cd "$PROJECT_DIR" && eval $CMD
+cd "$PROJECT_DIR" && "${CMD[@]}"
 CAPTURED_FRAMES=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f | wc -l)
 RECORDING_ELAPSED_SECONDS=$((CAPTURED_FRAMES * INTERVAL))
 

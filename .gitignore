@@ -1,10 +1,16 @@
-timelapse_imgs/*
-timelapse_images/*
-videos/*
+# Generated media - never commit (ignore whole dirs, any depth)
+timelapse_imgs/
+timelapse_images/
+videos/
+preview_capture/
+test_capture/
+
+# Temporary ffmpeg frame lists
+frames.txt
+frames_twitter.txt
+
 .DS_Store
 .env/
-preview_capture/*
-test_capture/*
 
 .roo
 .ruru

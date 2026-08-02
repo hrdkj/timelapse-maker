@@ -1,13 +1,14 @@
-from dataclasses import dataclass
-from pathlib import Path
 import argparse
+import re
 import sys
 import threading
 import time
-import cv2
-from datetime import datetime
-import re
 import urllib.request
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -145,9 +146,7 @@ def fetch_snapshot_from_phone(
                 print(f"Retry {attempt + 1}/{max_retries} after {wait_time}s - {e}")
                 time.sleep(wait_time)
             else:
-                print(
-                    f"Failed to fetch snapshot from {url} after {max_retries} attempts: {e}"
-                )
+                print(f"Failed to fetch snapshot from {url} after {max_retries} attempts: {e}")
                 return None
 
 
@@ -194,9 +193,7 @@ def capture_timelapse(
             )
         height, width = test_frame.shape[:2]
         print(f"Phone snapshot resolution: {width}x{height}")
-        print(
-            "Snapshot mode: network/battery efficient - only fetches frames when needed"
-        )
+        print("Snapshot mode: network/battery efficient - only fetches frames when needed")
     else:
         # Try different camera indices
         # If camera_index is specified, try that first
@@ -209,9 +206,7 @@ def capture_timelapse(
                     print(f"Using specified camera at index {camera_index}")
                 else:
                     test_camera.release()
-                    print(
-                        f"Specified camera index {camera_index} not working, scanning..."
-                    )
+                    print(f"Specified camera index {camera_index} not working, scanning...")
             else:
                 test_camera.release()
                 print(f"Cannot open camera at index {camera_index}, scanning...")
@@ -223,7 +218,7 @@ def capture_timelapse(
                 ret, frame = test_camera.read()
                 if ret and frame is not None:
                     camera = test_camera
-                    print(f"Found IP Webcam virtual device at index 20")
+                    print("Found IP Webcam virtual device at index 20")
                 else:
                     test_camera.release()
             else:
@@ -268,13 +263,9 @@ def capture_timelapse(
         last_frame = find_last_frame_number(output_dir)
         if last_frame > 0:
             start_frame = last_frame + 1
-            print(
-                f"Resuming from frame {start_frame} (found {last_frame} existing frames)"
-            )
+            print(f"Resuming from frame {start_frame} (found {last_frame} existing frames)")
         else:
-            print(
-                "Resume requested but no existing frames found. Starting from frame 1."
-            )
+            print("Resume requested but no existing frames found. Starting from frame 1.")
 
     consecutive_failures = 0
     max_consecutive_failures = 5
@@ -289,7 +280,9 @@ def capture_timelapse(
                 if frame is None:
                     consecutive_failures += 1
                     print(
-                        f"Failed to capture frame {i} ({consecutive_failures}/{max_consecutive_failures} consecutive failures)"
+                        "Failed to capture frame "
+                        f"{i} ({consecutive_failures}/{max_consecutive_failures} "
+                        "consecutive failures)"
                     )
                     if consecutive_failures >= max_consecutive_failures:
                         print(
@@ -318,9 +311,7 @@ def capture_timelapse(
             filename = output_dir / f"frame_{i:04d}.jpg"
             cv2.imwrite(str(filename), frame)
             total_frames = start_frame + num_frames - 1
-            print(
-                f"Captured frame {i}/{total_frames}{' with timestamp' if use_timestamp else ''}"
-            )
+            print(f"Captured frame {i}/{total_frames}{' with timestamp' if use_timestamp else ''}")
 
             if i < start_frame + num_frames - 1:
                 pause_controller.wait_for_active_time(interval)
@@ -335,9 +326,7 @@ def capture_timelapse(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Capture timelapse images using OpenCV."
-    )
+    parser = argparse.ArgumentParser(description="Capture timelapse images using OpenCV.")
     parser.add_argument(
         "--hours",
         "-H",
