@@ -26,6 +26,9 @@ IMAGE_FOLDER="$PROJECT_DIR/timelapse_imgs"
 OUTPUT_VIDEO=""
 FRAMERATE=24
 INTERVAL=30
+MUSIC_FILE=""
+DEFLICKER=1
+STABILIZE=1
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -46,6 +49,18 @@ while [[ $# -gt 0 ]]; do
       INTERVAL="$2"
       shift 2
       ;;
+    --music|-m)
+      MUSIC_FILE="$2"
+      shift 2
+      ;;
+    --no-deflicker)
+      DEFLICKER=0
+      shift
+      ;;
+    --no-stabilize)
+      STABILIZE=0
+      shift
+      ;;
     --help|-h)
       echo "Usage: $0 [OPTIONS]"
       echo ""
@@ -54,9 +69,16 @@ while [[ $# -gt 0 ]]; do
       echo "  --output, -o <file>        Output video file (default: auto-generated)"
       echo "  --framerate, -f <fps>      Video framerate (default: 24)"
       echo "  --interval <seconds>       Capture interval used for the images (default: 30)"
+      echo "  --music, -m <file>         Audio file to mix in (looped/trimmed to fit video,"
+      echo "                             normalized, with a 2s fade-out). Tip: grab one with"
+      echo "                             $PROJECT_DIR/get_music.sh"
+      echo "  --no-deflicker             Skip auto-exposure flicker removal (on by default"
+      echo "                             via deflicker_frames.py)"
+      echo "  --no-stabilize             Skip camera-jitter removal (on by default via"
+      echo "                             stabilize_frames.py)"
       echo "  --help, -h                 Show this help message"
       echo ""
-      echo "Example: $0 --input timelapse_imgs --interval 30 --output my_session.mp4"
+      echo "Example: $0 --input timelapse_imgs --interval 30 --music ~/Music/track.mp3"
       exit 0
       ;;
     *)
@@ -66,6 +88,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Check music file if provided
+if [ -n "$MUSIC_FILE" ] && [ ! -f "$MUSIC_FILE" ]; then
+  echo "ERROR: Music file not found: $MUSIC_FILE"
+  exit 1
+fi
 
 # Check if image folder exists
 if [ ! -d "$IMAGE_FOLDER" ]; then
@@ -85,7 +113,7 @@ RECORDING_ELAPSED_SECONDS=$((NUM_IMAGES * INTERVAL))
 RECORDING_ELAPSED_TIME=$(format_elapsed_time "$RECORDING_ELAPSED_SECONDS")
 
 # Calculate video duration
-VIDEO_DURATION=$(echo "scale=2; $NUM_IMAGES / $FRAMERATE" | bc)
+VIDEO_DURATION=$(awk "BEGIN { printf \"%.2f\", $NUM_IMAGES / $FRAMERATE }")
 
 echo "=== Creating Twitter-Optimized Video ==="
 echo "Input: $IMAGE_FOLDER"
@@ -143,12 +171,38 @@ fi
 
 echo "Output: $OUTPUT_VIDEO"
 echo ""
+
+# Remove auto-exposure flicker (frame-to-frame brightness jitter) before
+# encoding. The phone's AE/AWB varies per snapshot, so neighbor frames can
+# differ by 10-20% brightness; deflicker_frames.py smooths each frame
+# toward a short-term average while preserving real day/night changes.
+DEFLICKER_DIR=""
+STABILIZE_DIR=""
+if [ "$DEFLICKER" -eq 1 ] || [ "$STABILIZE" -eq 1 ]; then
+  PYTHON_BIN="$PROJECT_DIR/.venv/bin/python"
+  [ -x "$PYTHON_BIN" ] || PYTHON_BIN="python3"
+fi
+if [ "$DEFLICKER" -eq 1 ]; then
+  DEFLICKER_DIR=$(mktemp -d "${VIDEO_DIR}/deflicker_XXXXXX")
+  echo "=== Deflickering $NUM_IMAGES frames (auto-exposure flicker removal) ==="
+  "$PYTHON_BIN" "$PROJECT_DIR/deflicker_frames.py" "$IMAGE_FOLDER" "$DEFLICKER_DIR"
+  IMAGE_FOLDER="$DEFLICKER_DIR"
+  echo ""
+fi
+if [ "$STABILIZE" -eq 1 ]; then
+  STABILIZE_DIR=$(mktemp -d "${VIDEO_DIR}/stabilize_XXXXXX")
+  echo "=== Stabilizing $NUM_IMAGES frames (camera-jitter removal) ==="
+  "$PYTHON_BIN" "$PROJECT_DIR/stabilize_frames.py" "$IMAGE_FOLDER" "$STABILIZE_DIR"
+  IMAGE_FOLDER="$STABILIZE_DIR"
+  echo ""
+fi
+
 echo "Creating video with optimized settings for Twitter..."
 
 # Create frames list
 FRAMES_LIST="$PROJECT_DIR/frames_twitter.txt"
 : > "$FRAMES_LIST"
-trap 'rm -f "$FRAMES_LIST"' EXIT
+trap 'rm -f "$FRAMES_LIST"; rm -rf "$DEFLICKER_DIR" "$STABILIZE_DIR"' EXIT
 find "$IMAGE_FOLDER" -name "*.jpg" | sort -V | while read img; do
   echo "file '$img'" >> "$FRAMES_LIST"
 done
@@ -166,6 +220,36 @@ ffmpeg -y \
   -movflags +faststart \
   "$OUTPUT_VIDEO"
 
+# Mix in music if provided: loop if shorter, trim if longer, normalize loudness,
+# and fade out over the last 2 seconds.
+if [ -n "$MUSIC_FILE" ]; then
+  echo "Mixing in music: $MUSIC_FILE"
+  FINAL_VIDEO="$OUTPUT_VIDEO"
+  OUTPUT_VIDEO="${OUTPUT_VIDEO%.mp4}_with_music.mp4"
+
+  FADE_START=$(echo "scale=2; $VIDEO_DURATION - 2" | bc)
+  # Only fade out if the video is long enough to make a fade meaningful.
+  if [ "$(echo "$VIDEO_DURATION > 3" | bc)" -eq 1 ]; then
+    AUDIO_FILTER="loudnorm,afade=t=out:st=${FADE_START}:d=2"
+  else
+    AUDIO_FILTER="loudnorm"
+  fi
+
+  ffmpeg -y \
+    -i "$FINAL_VIDEO" \
+    -stream_loop -1 \
+    -i "$MUSIC_FILE" \
+    -filter_complex "[1:a]${AUDIO_FILTER}[a]" \
+    -map 0:v -map "[a]" \
+    -t "$VIDEO_DURATION" \
+    -c:v copy \
+    -c:a aac \
+    -b:a 192k \
+    -movflags +faststart \
+    "$OUTPUT_VIDEO"
+  rm -f "$FINAL_VIDEO"
+fi
+
 # Get file size
 FILE_SIZE=$(du -h "$OUTPUT_VIDEO" | cut -f1)
 
@@ -174,6 +258,9 @@ echo "=== Video Created Successfully ==="
 echo "Output: $OUTPUT_VIDEO"
 echo "Total recording time: $RECORDING_ELAPSED_TIME"
 echo "Video duration: ${VIDEO_DURATION}s"
+[ "$DEFLICKER" -eq 1 ] && echo "Deflicker: enabled (auto-exposure flicker removed)"
+[ "$STABILIZE" -eq 1 ] && echo "Stabilization: enabled (camera jitter removed)"
+[ -n "$MUSIC_FILE" ] && echo "Music: $MUSIC_FILE (normalized, 2s fade-out)"
 echo "File size: $FILE_SIZE"
 echo ""
 

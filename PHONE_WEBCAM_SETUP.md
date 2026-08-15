@@ -327,6 +327,34 @@ This captures 10 frames (5 min ÷ 30s) and creates a sub-1-second video. Perfect
 5. **Intervals:** 30s is great for 6-8 hour sessions. Use 15-20s for shorter sessions.
 6. **WiFi:** Strong signal prevents dropped frames. Stay close to router.
 
+### Recommended IP Webcam settings for timelapses
+
+These settings fix the two biggest quality problems: frame-to-frame brightness
+flicker (phone auto-exposure) and soft/shaky frames (auto-focus hunting).
+Set them in the app before starting the server:
+
+| Setting | Value | Why |
+|---|---|---|
+| Video quality | **100** | The biggest sharpness/banding win. (The 80-90 recommendation below is for live streaming, which is irrelevant for snapshot captures.) |
+| Resolution | Highest (1080p+) | More detail; never change mid-session |
+| FPS | 10-15 | Snapshots don't need 30fps; less heat = less sensor noise |
+| Overlay | **Off** | The app can burn date/time text into frames; `capture_timelapse.py` adds its own timestamp |
+| Orientation | Landscape | Fixed |
+| Focus | **Manual / lock focus** | Auto-focus hunting causes soft frames and apparent zoom wobble. Tap the scene once to focus, then disable AF |
+| Exposure lock | **On for short sessions** | Kills exposure flicker at the source. For long day→night sessions, leave auto and let `deflicker_frames.py` fix it in post |
+| White balance lock | **On for short sessions** | Same rule as exposure |
+| Night vision | Off | Unless you want the IR look |
+
+General reliability: keep the phone plugged in, disable Android battery
+optimization for IP Webcam, keep WiFi always-on, and don't set a username/
+password on the server (the capture scripts don't send credentials).
+
+**Physical setup matters more than any setting:** keep the phone rigidly
+mounted and away from fans, doors, or any vibrating surfaces. Even a power
+cable touching the phone causes visible frame jitter (a fan wire touching the
+phone made afternoon frames measurably 2x shakier). Wipe the lens before each
+session - smudges cause haze, especially at night.
+
 ---
 
 ## Questions or Issues?

@@ -1,5 +1,6 @@
 import argparse
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -126,6 +127,18 @@ def add_timestamp(frame):
     )
 
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+
+
+def send_notification(title: str, message: str, urgency: str = "normal") -> None:
+    """Send a desktop notification via notify-send, falling back to console output."""
+    try:
+        subprocess.run(
+            ["notify-send", "-u", urgency, title, message],
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        print(f"Notification: {title} - {message}")
 
 
 def fetch_snapshot_from_phone(
@@ -285,6 +298,12 @@ def capture_timelapse(
                         "consecutive failures)"
                     )
                     if consecutive_failures >= max_consecutive_failures:
+                        send_notification(
+                            "Timelapse: phone disconnected",
+                            f"Failed {max_consecutive_failures} frames in a row. "
+                            "IP Webcam may be asleep or disconnected.",
+                            urgency="critical",
+                        )
                         print(
                             "\nToo many consecutive failures. Phone may be asleep or disconnected."
                         )

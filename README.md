@@ -110,6 +110,22 @@ uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs
 uv run capture_timelapse.py --hours 12 --interval 15 --output-dir timelapse_imgs --resume
 ```
 
+#### Add Music (optional)
+Skip the manual mp3 download sites. Grab a track straight from the command line and mix it in during video creation:
+
+```bash
+# Download a track (URL, or just search)
+./get_music.sh "lofi chill beats"
+./get_music.sh https://example.com/some-track
+
+# Create the video with music mixed in
+./create_twitter_video.sh --input timelapse_imgs --music music/Some_Track.mp3
+```
+
+`--music` loops the track if it's shorter than the video, trims it if longer, normalizes the loudness (-14 LUFS, streaming standard), and adds a 2s fade-out at the end. The music output gets saved alongside the silent one with a `_with_music` suffix.
+
+Good legal sources that work with `get_music.sh`: YouTube Audio Library, Pixabay Music, Free Music Archive.
+
 ## Features
 - **Automatic camera detection**: Scans for available cameras and uses the first working one
 - **Built-in timestamps**: Add military time (HH:MM) to each frame

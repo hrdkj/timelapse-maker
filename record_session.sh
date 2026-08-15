@@ -10,6 +10,13 @@ set -e
 
 PROJECT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
+send_notification() {
+  local urgency=$1
+  local title=$2
+  local message=$3
+  notify-send -u "$urgency" "$title" "$message" 2>/dev/null || echo "Notification: $title - $message"
+}
+
 format_elapsed_time() {
   local total_seconds=$1
   local hours=$((total_seconds / 3600))
@@ -166,10 +173,16 @@ echo "Press Ctrl+C to stop early"
 echo "Type p then Enter to pause; type r then Enter to resume"
 echo ""
 
+send_notification normal "Timelapse recording started" \
+  "Recording for $HOURS hours at ${INTERVAL}s intervals (${WIDTH}x${HEIGHT})."
+
 # Run the capture
 cd "$PROJECT_DIR" && "${CMD[@]}"
 CAPTURED_FRAMES=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f | wc -l)
 RECORDING_ELAPSED_SECONDS=$((CAPTURED_FRAMES * INTERVAL))
+
+send_notification normal "Timelapse recording finished" \
+  "Captured $CAPTURED_FRAMES frames (${RECORDING_ELAPSED_SECONDS}s of recordings)."
 
 echo ""
 echo "Recording completed!"
